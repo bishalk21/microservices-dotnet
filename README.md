@@ -54,3 +54,178 @@
     - click on `Create user` to create a new user. (optional, users can also sign up themselves via the hosted UI)
     - click on `Create group` to create a new group. (optional)
     - add users to the group. (optional)
+
+## API Gateway (Pattern)
+
+- stops the consumers of a microservice from directly accessing the microservice.
+- simplifies the system's interface by combining multiple services into a single API.
+- can handle tasks such as authentication, authorization, rate limiting, and caching.
+- simplifies monitoring and logging by providing a single point of entry for all requests to the microservice.
+- simplifies catalogue and documentation of the microservice APIs.
+
+### AWS API Gateway
+
+- https://aws.amazon.com/api-gateway/
+- fully managed service.
+- easy to create, publish, maintain, monitor, and secure APIs at any scale.
+- part of the AWS serverless platform.
+- no complex infrastructure to manage.
+- needs to be created per API microservice.
+
+### Google Apigee
+
+- https://cloud.google.com/apigee
+- enterprise-grade API management platform.
+- various deployment options: cloud, on-premises, hybrid.
+- hybrid cloud/on-premises deployment.
+- advanced features: API analytics, developer portal, monetization, security policies.
+- can manage multiple APIs from a single platform.
+- costly compared to AWS API Gateway.
+- complex to set up and manage.
+
+### Kong
+
+- https://konghq.com/
+- open-source API management platform.
+- enterprise version with additional features and support.
+- very expensive for the enterprise version.
+- high throughput and low latency.
+- can be deployed on-premises or in the cloud.
+- requires more setup and management compared to AWS API Gateway.
+
+## Creating Mock API with AWS API Gateway - Rest API
+
+1. Sign in to the AWS Management Console and open the API Gateway console at https://console.aws.amazon.com/apigateway.
+2. Choose "Create API".
+3. Under REST API, choose "Build".
+4. For "API name", enter `HotelBookingAPI`.
+5. For "Description", enter `API for Hotel Booking Microservice`, Leave endpoint type as "Regional".
+6. Choose "Create API".
+7. In the Resources pane, choose "Actions", and then choose "Create Resource".
+8. For "Resource Name", enter `hotels`. The "Resource Path" will auto-populate.
+9. Select the checkbox for "Enable API Gateway CORS".
+10. Choose "Create Resource".
+11. With the /hotels resource selected, choose "Actions", and then choose "Create Method".
+12. From the dropdown list, choose "GET" or "POST", and then choose the checkmark icon to save.
+13. In the "GET - Setup" pane, do the following:
+    - For "Integration type", choose "Mock".
+    - Leave the other default settings as they are, and then choose "Save".
+14. In the "Method Execution" pane, choose "Method Response".
+15. Expand the "200" response, and then choose "Add Response Model".
+16. For "Content-Type", enter `application/json`.
+17. For "Model", choose `Empty`, and then choose the checkmark icon to save.
+18. Choose the back arrow to return to the "Method Execution" pane.
+19. Choose "Intergration Request".
+20. Expand "Mapping Templates", and then choose "Add mapping template".
+21. For "Content-Type", enter `multipart/form-data`, and then choose the checkmark icon to save.
+22. In the popup, choose "OK" to confirm that you want to create a new mapping template.
+23. In the text area, enter the following code to extract form data:
+    ```velocity
+    #set($inputRoot = $input.path('$'))
+    {
+      "name": "$inputRoot.name",
+      "location": "$inputRoot.location",
+      "price": $inputRoot.price
+    }
+    ```
+24. Choose "Save".
+25. Choose "Integration Response".
+26. Expand the "200" response, and then choose "Add Header".
+27. For "Name", enter `Content-Type`, and then choose the checkmark icon to save.
+28. In the "Header Mappings" section, choose "Add Mapping Template".
+29. For "Content-Type", enter `application/json`, and then choose the checkmark icon to save.
+30. In the popup, choose "OK" to confirm that you want to create a new mapping template.
+31. In the text area, enter the following mock response:
+    ```json
+    {
+      "hotels": [
+        {
+          "id": 1,
+          "name": "Hotel A",
+          "location": "City A",
+          "price": 100
+        },
+        {
+          "id": 2,
+          "name": "Hotel B",
+          "location": "City B",
+          "price": 150
+        }
+      ]
+    }
+    ```
+32. Choose "Save".
+33. Choose the back arrow to return to the "Method Execution" pane.
+34. Choose "Actions", and then choose "Deploy API".
+35. For "Deployment stage", choose `[New Stage]`.
+36. For "Stage name", enter `dev`.
+37. For "Stage description", enter `Development Stage`.
+38. For "Deployment description", enter `Initial deployment`.
+39. Choose "Deploy".
+40. The "Invoke URL" for the `dev` stage appears at the top of the page. Copy this URL to use in Postman or your web browser to test the API.
+    - e.g., `https://abcde12345.execute-api.ap-southeast-2.amazonaws.com/dev/hotels`
+41. Test the API by sending a GET request to the Invoke URL using Postman or your web browser.
+    - You should receive the mock response defined in step 25.
+
+### Authenticating API Requests
+
+1. In the API Gateway console, choose your API.
+2. In the left navigation pane, choose "Authorizers".
+3. Choose "Create New Authorizer".
+4. For "Name", enter `CognitoAuthorizer`.
+5. For "Type", choose `Cognito`.
+6. For "Cognito User Pool", choose the user pool you created earlier.
+7. For "Token Source", enter `Authorization`.
+8. Choose "Create".
+9. Test the authorizer by choosing "Test" in the Authorizers pane.
+   - Enter a valid JWT token from Cognito in the "Authorization" field, and then choose "Test".
+   - You should see a successful response indicating that the token is valid.
+10. In the left navigation pane, choose "Resources".
+11. Select the `/hotels` resource.
+12. Choose the method (GET or POST) you created earlier.
+13. In the "Method Execution" pane, choose "Method Request".
+14. Under "Settings", choose the pencil icon next to "Authorization".
+15. From the dropdown list, choose `CognitoAuthorizer`, and then choose the checkmark icon to save.
+16. Choose the back arrow to return to the "Method Execution" pane.
+17. Choose "Actions", and then choose "Deploy API".
+18. Choose the deployment stage (e.g., `dev`), and then choose "Deploy".
+19. Test the API by sending a GET request to the Invoke URL using Postman or your web browser, including the `Authorization` header with a valid JWT token from Cognito.
+    - You should receive the mock response defined in step 25 if the token is valid.
+
+## CORS Configuration
+
+1. In the API Gateway console, choose your API.
+2. In the left navigation pane, choose "Resources".
+3. Select the `/hotels` resource.
+4. Choose the method (GET or POST) you created earlier.
+5. In the "Method Execution" pane, choose "Method Response".
+6. Expand the "200" response, and then choose "Add Response Header".
+7. For "Name", enter `Access-Control-Allow-Origin`, and then choose the checkmark icon to save.
+8. Choose "Add Response Header" again.
+9. For "Name", enter `Access-Control-Allow-Headers`, and then choose the checkmark icon to save.
+10. Choose "Add Response Header" again.
+11. For "Name", enter `Access-Control-Allow-Methods`, and then choose the checkmark icon to save.
+12. Choose the back arrow to return to the "Method Execution" pane.
+13. Choose "Integration Response".
+14. Expand the "200" response, and then choose "Add Header".
+15. For "Name", enter `Access-Control-Allow-Origin`, and then choose the checkmark icon to save.
+16. In the "Header Mappings" section, choose "Add Mapping Template".
+17. For "Content-Type", enter `application/json`, and then choose the checkmark icon to save.
+18. In the text area, enter `'*'`, and then choose "Save".
+19. Choose "Add Header" again.
+20. For "Name", enter `Access-Control-Allow-Headers`, and then choose the checkmark icon to save.
+21. In the "Header Mappings" section, choose "Add Mapping Template".
+22. For "Content-Type", enter `application/json`, and then choose the checkmark icon to save.
+23. In the text area, enter `'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'`, and then choose "Save".
+24. Choose "Add Header" again.
+25. For "Name", enter `Access-Control-Allow-Methods`, and then choose the checkmark icon to save.
+26. In the "Header Mappings" section, choose "Add Mapping Template".
+27. For "Content-Type", enter `application/json`, and then choose the checkmark icon to save.
+28. In the text area, enter `'GET,POST,OPTIONS'`, and then choose "Save".
+29. Choose the back arrow to return to the "Method Execution" pane.
+30. Choose "Actions", and then choose "Deploy API".
+31. Choose the deployment stage (e.g., `dev`), and then choose "Deploy".
+32. Test the API by sending a GET request to the Invoke URL using Postman or your web
+    browser, including the `Authorization` header with a valid JWT token from Cognito.
+    - You should receive the mock response defined in step 25 if the token is valid.
+    - The response headers should include the CORS headers you configured.
