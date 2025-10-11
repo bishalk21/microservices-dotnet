@@ -3,10 +3,13 @@ using System.Net;
 using System.Text;
 using System.Text.Json;
 using Amazon;
+using Amazon.DynamoDBv2;
+using Amazon.DynamoDBv2.DataModel;
 using Amazon.Lambda.APIGatewayEvents;
 using Amazon.Lambda.Core;
 using Amazon.S3;
 using Amazon.S3.Model;
+using HotelManager_HotelAdmin.Models;
 using HttpMultipartParser;
 
 // using Amazon.Lambda.Serialization.SystemTextJson;   
@@ -70,14 +73,42 @@ public class HotelAdmin
         var bucketName = Environment.GetEnvironmentVariable("bucketName");
         
         var s3Client = new AmazonS3Client(RegionEndpoint.GetBySystemName(region));
+        var dbDynamoClient = new AmazonDynamoDBClient(RegionEndpoint.GetBySystemName(region));
 
-        await s3Client.PutObjectAsync(new PutObjectRequest
+        try
         {
-            BucketName = bucketName,
-            Key = fileName,
-            InputStream = fileContentStream,
-            AutoCloseStream = true,
-        });
+            await s3Client.PutObjectAsync(new PutObjectRequest
+            {
+                BucketName = bucketName,
+                FilePath = fileName,
+                InputStream = fileContentStream,
+                AutoCloseStream = true,
+            });
+
+            var hotel = new Hotel
+            {
+                UserId = userId,
+                HotelId = Guid.NewGuid().ToString(),
+                Name = hotelName,
+                CityName = hotelCity,
+                Price = int.Parse(hotelPrice),
+                // Price = hotelPrice,
+                // Rating = hotelRating,
+                // Price = Convert.ToDecimal(hotelPrice),
+                FileName = fileName,
+                // Price = Decimal.Parse(hotelPrice)
+                Rating = int.Parse(hotelRating)
+            };
+            
+             using var dbContext = new DynamoDBContext(dbDynamoClient);
+             await dbContext.SaveAsync(hotel);
+
+        }
+        catch (Exception e)
+        {
+            Console.WriteLine(e);
+            throw;
+        }
         
     Console.WriteLine("OK.");
         return response;

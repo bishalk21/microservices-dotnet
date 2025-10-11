@@ -10,7 +10,7 @@
 - AWS provides several database services, such as DynamoDB, RDS, Aurora, etc.
 - there are both relational databases (e.g., RDS, Aurora) and non-relational databases (e.g., DynamoDB, DocumentDB).
 - AWS Relational Databases Service (RDS) is a managed service that makes it easy to set up, operate, and scale a relational database in the cloud. it supports several database engines, such as MySQL, PostgreSQL, Oracle, SQL Server, etc.
-- AWS DynamoDB is a fully managed NoSQL database service that provides fast and predictable performance with seamless scalability. it is a key-value and document database that delivers single-digit millisecond performance at any scale. Information is stored as JSON documents.
+- AWS DynamoDB is a `fully managed NoSQL database service` that provides fast and predictable performance with seamless scalability. it is a `key-value and document database` that delivers single-digit millisecond performance at any scale. Information is stored as JSON documents.
 - One RDS (i.e., MySQL) instance for the entire system is ok, however, each microservice must have its own database (i.e., DynamoDB table) to ensure loose coupling and high cohesion.
 - no cross-database queries or access are allowed. each microservice is responsible for its own data.
 
