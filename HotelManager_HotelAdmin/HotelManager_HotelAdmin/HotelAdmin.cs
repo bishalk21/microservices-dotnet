@@ -87,8 +87,8 @@ public class HotelAdmin
 
             var hotel = new Hotel
             {
-                UserId = userId,
-                HotelId = Guid.NewGuid().ToString(),
+                userId = userId,
+                hotelId = Guid.NewGuid().ToString(),
                 Name = hotelName,
                 CityName = hotelCity,
                 Price = int.Parse(hotelPrice),

@@ -5,11 +5,11 @@ namespace HotelManager_HotelAdmin.Models;
 [DynamoDBTable("Hotels")]
 public class Hotel
 {
-    [DynamoDBHashKey("UserID")]
-    public string UserId { get; set; }
+    [DynamoDBHashKey("userId")]
+    public string userId { get; set; }
     
-    [DynamoDBHashKey("HotelId")]
-    public string HotelId { get; set; } 
+    [DynamoDBHashKey("hotelId")]
+    public string hotelId { get; set; } 
     
     public string? Name { get; set; }
     public int Price { get; set; }
