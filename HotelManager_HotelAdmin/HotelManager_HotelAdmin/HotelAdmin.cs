@@ -2,9 +2,11 @@
 using System.Net;
 using System.Text;
 using System.Text.Json;
+using System.Text.Json.Serialization;
 using Amazon;
 using Amazon.DynamoDBv2;
 using Amazon.DynamoDBv2.DataModel;
+using Amazon.DynamoDBv2.DocumentModel;
 using Amazon.Lambda.APIGatewayEvents;
 using Amazon.Lambda.Core;
 using Amazon.S3;
@@ -20,6 +22,53 @@ namespace HotelManager_HotelAdmin;
 
 public class HotelAdmin
 {
+
+    public async Task<APIGatewayProxyResponse> ListHotels(APIGatewayProxyRequest request)
+    {
+        var response = new APIGatewayProxyResponse
+        {
+            Headers = new Dictionary<string, string>(),
+            StatusCode = 200,
+        };
+
+        response.Headers.Add("Access-Control-Allow-Origin", "*");
+        response.Headers.Add("Access-Control-Allow-Methods", "OPTIONS,GET");
+        response.Headers.Add("Access-Control-Allow-Headers", "*");
+        response.Headers.Add("Content-Type", "application/json");
+
+        if (request?.QueryStringParameters == null)
+        {
+            Console.WriteLine(
+                "Query string is null. You must configure the Query String Mapping in your API resource in API Gateway");
+            return response;
+        }
+
+        var token = request.QueryStringParameters.ContainsKey("token") ? request.QueryStringParameters["token"] : "";
+        if (string.IsNullOrEmpty(token))
+        {
+            response.StatusCode = (int)HttpStatusCode.BadRequest;
+            response.Body = JsonSerializer.Serialize(new { Error = "Query parameter 'token' not present." });
+            return response;
+        }
+
+        var tokenDetails = new JwtSecurityToken(token);
+        var userId = tokenDetails.Claims.FirstOrDefault(x => x.Type == "sub")?.Value;
+
+        var region = Environment.GetEnvironmentVariable("AWS_REGION");
+
+        var dbClient = new AmazonDynamoDBClient(RegionEndpoint.GetBySystemName(region));
+        using var dbContext = new DynamoDBContext(dbClient);
+
+        var hotels = await dbContext.ScanAsync<Hotel>(new[]
+        {
+           new ScanCondition("UserId", ScanOperator.Equal, userId)
+       }).GetRemainingAsync();
+
+        response.Body = JsonSerializer.Serialize(hotels);
+
+        return response;
+    }
+
     public async Task<APIGatewayProxyResponse> AddHotel(APIGatewayProxyRequest request, ILambdaContext context)
     {
         var response = new APIGatewayProxyResponse()
@@ -48,11 +97,11 @@ public class HotelAdmin
         var file = formData.Files.FirstOrDefault();
         var fileName = file?.Name;
         // file.data
-      
+
         await using var fileContentStream = new MemoryStream();
         await file.Data.CopyToAsync(fileContentStream);
         fileContentStream.Position = 0;
-        
+
         var userId = formData.GetParameterValue("userId");
         var idToken = formData.GetParameterValue("idToken");
 
@@ -69,9 +118,9 @@ public class HotelAdmin
             });
         }
 
-        var region  = Environment.GetEnvironmentVariable("AWS_REGION")  ?? "ap-southeast-2";
+        var region = Environment.GetEnvironmentVariable("AWS_REGION") ?? "ap-southeast-2";
         var bucketName = Environment.GetEnvironmentVariable("bucketName");
-        
+
         var s3Client = new AmazonS3Client(RegionEndpoint.GetBySystemName(region));
         var dbDynamoClient = new AmazonDynamoDBClient(RegionEndpoint.GetBySystemName(region));
 
@@ -99,9 +148,9 @@ public class HotelAdmin
                 // Price = Decimal.Parse(hotelPrice)
                 Rating = int.Parse(hotelRating)
             };
-            
-             using var dbContext = new DynamoDBContext(dbDynamoClient);
-             await dbContext.SaveAsync(hotel);
+
+            using var dbContext = new DynamoDBContext(dbDynamoClient);
+            await dbContext.SaveAsync(hotel);
 
         }
         catch (Exception e)
@@ -109,8 +158,8 @@ public class HotelAdmin
             Console.WriteLine(e);
             throw;
         }
-        
-    Console.WriteLine("OK.");
+
+        Console.WriteLine("OK.");
         return response;
     }
 }
