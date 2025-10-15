@@ -52,8 +52,15 @@
 28. Click on the "Add query string" button.
 29. Type in "token" in the name field. Then click on the tick button on the right to save.
 30. Enable the "required" option.
-31. Click on OPTIONS under the created resource.
-32. Make sure its integration type is MOCK and its Integration returns the HTTP 200 and the CORS headers.
+31. Click on Authorizers on the left side of the screen
+32. Click on Create New Authorizer.
+33. Select Lambda as the type of authorizer.
+34. Provide a name (i.e., MyLambdaAuthorizer).
+35. Select Request as the Lambda event payload.
+36. In Identity Sources, choose Query String and type in "token".
+37. Tick the Enabled for Authorization Cache checkbox.
+38. Click on OPTIONS under the created resource.
+39. Make sure its integration type is MOCK and its Integration returns the HTTP 200 and the CORS headers.
 
     ```json
     {
@@ -66,5 +73,5 @@
     }
     ```
 
-33. Deploy your API to a new Stage (i.e., Test).
-34. Make a GET request to the Invoke URL of the GET proxy resource.
+40. Deploy your API to a new Stage (i.e., Test).
+41. Make a GET request to the Invoke URL of the GET proxy resource.
